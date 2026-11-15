@@ -2,7 +2,11 @@
 
 package com.badger.app.ui
 
+import android.content.Intent
+import android.content.pm.ShortcutInfo
+import android.content.pm.ShortcutManager
 import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -41,6 +45,21 @@ import com.badger.app.viewmodel.NagViewModel
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Register Google Assistant / Launcher Dynamic App Shortcuts
+        try {
+            val shortcutManager = getSystemService(ShortcutManager::class.java)
+            val shortcut = ShortcutInfo.Builder(this, "add_nag")
+                .setShortLabel("New Nag")
+                .setLongLabel("Create a new Nag")
+                .setIcon(android.graphics.drawable.Icon.createWithResource(this, R.drawable.leaf_plus))
+                .setIntents(arrayOf(
+                    Intent(Intent.ACTION_VIEW, Uri.parse("badger://add"), this, MainActivity::class.java)
+                ))
+                .build()
+            shortcutManager?.setDynamicShortcuts(listOf(shortcut))
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         setContent { BadgerApp() }
     }
 }
@@ -395,7 +414,7 @@ private fun SettingsScreen(dark: Boolean, forest: Color) {
     var darkMode by remember { mutableStateOf(dark) }
     var notifications by remember { mutableStateOf(true) }
     var selectedTone by remember { mutableStateOf("Arp L") }
-    var showPlaces by remember { mutableStateOf(false) }
+    var subScreen by remember { mutableStateOf("main") }
 
     val tones = listOf(
         "Arp L" to R.raw.arp_l,
@@ -408,73 +427,103 @@ private fun SettingsScreen(dark: Boolean, forest: Color) {
         "Aliens Most Likely" to R.raw.aliens_most_likely
     )
 
-    if (showPlaces) {
-        Column(Modifier.fillMaxSize().padding(16.dp)) {
-            Text("Saved Places", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(16.dp))
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp)) {
-                    Text("Home", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                    Text("Radius: 360m", fontSize = 14.sp, color = Color.Gray)
+    when (subScreen) {
+        "places" -> {
+            Column(Modifier.fillMaxSize().padding(16.dp)) {
+                Text("Manage Saved Places", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(16.dp))
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text("Home", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Radius: 360m · Geofence Active", fontSize = 14.sp, color = Color.Gray)
+                    }
                 }
-            }
-            Spacer(Modifier.height(16.dp))
-            Button(onClick = { showPlaces = false }) {
-                Text("Back to Settings")
+                Spacer(Modifier.height(16.dp))
+                Button(onClick = { subScreen = "main" }) { Text("Back to Settings") }
             }
         }
-    } else {
-        Column(Modifier.fillMaxSize().padding(16.dp)) {
-            Text("Settings", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(16.dp))
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text("Dark Mode", fontSize = 16.sp)
-                        Switch(checked = darkMode, onCheckedChange = { darkMode = it })
+        "family" -> {
+            Column(Modifier.fillMaxSize().padding(16.dp)) {
+                Text("Family Badger (v2.0)", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(16.dp))
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text("Primary Family Group", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Members: Joshua, Family", fontSize = 14.sp, color = Color.Gray)
                     }
-                    Divider()
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text("Notifications", fontSize = 16.sp)
-                        Switch(checked = notifications, onCheckedChange = { notifications = it })
-                    }
-                    Divider()
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Notification Tone (Tap to preview)", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                        tones.forEach { (name, resId) ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        selectedTone = name
-                                        try {
-                                            MediaPlayer.create(context, resId)?.apply {
-                                                setOnCompletionListener { release() }
-                                                start()
+                }
+                Spacer(Modifier.height(16.dp))
+                Button(onClick = { subScreen = "main" }) { Text("Back to Settings") }
+            }
+        }
+        else -> {
+            Column(Modifier.fillMaxSize().padding(16.dp)) {
+                Text("Settings", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(16.dp))
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text("Dark Mode", fontSize = 16.sp)
+                            Switch(checked = darkMode, onCheckedChange = { darkMode = it })
+                        }
+                        Divider()
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text("Notifications", fontSize = 16.sp)
+                            Switch(checked = notifications, onCheckedChange = { notifications = it })
+                        }
+                        Divider()
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Notification Tone (Tap to preview)", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                            tones.forEach { (name, resId) ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedTone = name
+                                            try {
+                                                MediaPlayer.create(context, resId)?.apply {
+                                                    setOnCompletionListener { release() }
+                                                    start()
+                                                }
+                                            } catch (e: Exception) {
+                                                e.printStackTrace()
                                             }
-                                        } catch (e: Exception) {
-                                            e.printStackTrace()
                                         }
+                                        .padding(vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(name, fontSize = 14.sp)
+                                    if (selectedTone == name) {
+                                        Text("Selected", fontSize = 12.sp, color = forest, fontWeight = FontWeight.Bold)
                                     }
-                                    .padding(vertical = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(name, fontSize = 14.sp)
-                                if (selectedTone == name) {
-                                    Text("Selected", fontSize = 12.sp, color = forest, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
-                    }
-                    Divider()
-                    TextButton(onClick = { showPlaces = true }) {
-                        Text("Manage Saved Places", color = forest, fontSize = 16.sp)
-                    }
-                    Divider()
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text("App Version", fontSize = 16.sp)
-                        Text("1.0.4", fontSize = 14.sp, color = Color.Gray)
+                        Divider()
+                        TextButton(onClick = { subScreen = "places" }) {
+                            Text("Manage Saved Places", color = forest, fontSize = 16.sp)
+                        }
+                        Divider()
+                        TextButton(onClick = { subScreen = "family" }) {
+                            Text("Manage Family Group (v2.0)", color = forest, fontSize = 16.sp)
+                        }
+                        Divider()
+                        TextButton(onClick = {
+                            val exportIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_SUBJECT, "Badger Export Data")
+                                putExtra(Intent.EXTRA_TEXT, "{\"app\": \"Badger\", \"version\": \"1.0.4\", \"data\": \"Exported Nags\"}")
+                            }
+                            context.startActivity(Intent.createChooser(exportIntent, "Export Local Data (JSON)"))
+                        }) {
+                            Text("Export Local Data (JSON)", color = forest, fontSize = 16.sp)
+                        }
+                        Divider()
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text("App Version", fontSize = 16.sp)
+                            Text("1.0.4", fontSize = 14.sp, color = Color.Gray)
+                        }
                     }
                 }
             }
