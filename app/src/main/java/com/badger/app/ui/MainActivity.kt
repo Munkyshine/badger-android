@@ -2,10 +2,12 @@
 
 package com.badger.app.ui
 
+import android.media.MediaPlayer
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -26,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -70,10 +73,10 @@ fun BadgerApp(viewModel: NagViewModel = viewModel()) {
             Box(Modifier.padding(padding).fillMaxSize().background(bg)) {
                 when (tab) {
                     0 -> TodayScreen(viewModel, dark, forest)
+                    1 -> CalendarScreen(viewModel.openNags.collectAsState().value, dark)
                     2 -> NagListScreen("Completed", viewModel.completedNags.collectAsState().value, dark)
                     3 -> BurrowScreen(viewModel, dark, forest)
-                    4 -> PlaceholderScreen("Settings")
-                    else -> PlaceholderScreen("Calendar")
+                    4 -> SettingsScreen(dark, forest)
                 }
             }
         }
@@ -159,13 +162,14 @@ private fun NagCard(
 ) {
     val priority = Priority.fromRaw(nag.priorityRaw)
     var offsetX by remember { mutableStateOf(0f) }
+    var expanded by remember { mutableStateOf(false) }
+    var nibbleChecked by remember { mutableStateOf(false) }
     val titleColor = if (dark) BadgerColors.darkTitle else BadgerColors.lightTitle
     val subColor = if (dark) BadgerColors.darkSubtitle else BadgerColors.lightSubtitle
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 72.dp)
             .pointerInput(nag.id) {
                 detectHorizontalDragGestures(
                     onHorizontalDrag = { _, amount -> offsetX += amount },
@@ -184,7 +188,6 @@ private fun NagCard(
             Box(
                 Modifier
                     .width(4.dp)
-                    .heightIn(min = 72.dp)
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(topStart = 14.dp, bottomStart = 14.dp))
                     .background(priority.stripe)
@@ -198,8 +201,18 @@ private fun NagCard(
                     color = forest,
                     fontSize = 13.5.sp,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier
+                        .padding(top = 6.dp)
+                        .clickable { expanded = !expanded }
                 )
+                if (expanded) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { nibbleChecked = !nibbleChecked }) {
+                        Checkbox(checked = nibbleChecked, onCheckedChange = { nibbleChecked = it })
+                        Spacer(Modifier.width(8.dp))
+                        Text("Step 1: First action item", color = titleColor, fontSize = 14.sp)
+                    }
+                }
             }
         }
     }
@@ -300,18 +313,53 @@ private fun AddNagDialog(
 }
 
 @Composable
+private fun CalendarScreen(nags: List<NagItem>, dark: Boolean) {
+    val titleColor = if (dark) BadgerColors.darkTitle else BadgerColors.lightTitle
+    val subColor = if (dark) BadgerColors.darkSubtitle else BadgerColors.lightSubtitle
+    Column(Modifier.fillMaxSize().padding(16.dp)) {
+        Text("Calendar & Schedule", color = titleColor, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(12.dp))
+        if (nags.isEmpty()) {
+            Text("No scheduled nags.", color = subColor)
+        } else {
+            nags.forEach { nag ->
+                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.DateRange, contentDescription = null, tint = Color.Blue)
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(nag.title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                            Text("Scheduled Action", fontSize = 12.sp, color = subColor)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun BurrowScreen(viewModel: NagViewModel, dark: Boolean, forest: Color) {
     val nags by viewModel.burrowedNags.collectAsState()
     val titleColor = if (dark) BadgerColors.darkTitle else BadgerColors.lightTitle
+    val subColor = if (dark) BadgerColors.darkSubtitle else BadgerColors.lightSubtitle
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Burrow", color = titleColor, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+        Text("The Burrow", color = titleColor, fontSize = 28.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(12.dp))
         if (nags.isEmpty()) {
-            Text("Nothing parked.", color = if (dark) BadgerColors.darkSubtitle else BadgerColors.lightSubtitle)
+            Text("Nothing in the burrow.", color = subColor)
         } else {
             nags.forEach { nag ->
-                TextButton(onClick = { viewModel.unburrowNag(nag) }) {
-                    Text("${nag.title}  ·  Bring back", color = forest)
+                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(nag.title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                            Text("Archived", fontSize = 12.sp, color = subColor)
+                        }
+                        TextButton(onClick = { viewModel.unburrowNag(nag) }) {
+                            Text("Bring Back", color = forest)
+                        }
+                    }
                 }
             }
         }
@@ -321,20 +369,115 @@ private fun BurrowScreen(viewModel: NagViewModel, dark: Boolean, forest: Color) 
 @Composable
 private fun NagListScreen(heading: String, nags: List<NagItem>, dark: Boolean) {
     val titleColor = if (dark) BadgerColors.darkTitle else BadgerColors.lightTitle
+    val subColor = if (dark) BadgerColors.darkSubtitle else BadgerColors.lightSubtitle
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text(heading, color = titleColor, fontSize = 28.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(12.dp))
         if (nags.isEmpty()) {
-            Text("None yet.", color = if (dark) BadgerColors.darkSubtitle else BadgerColors.lightSubtitle)
+            Text("None yet.", color = subColor)
         } else {
-            nags.forEach { Text(it.title, color = titleColor, modifier = Modifier.padding(vertical = 8.dp)) }
+            nags.forEach { nag ->
+                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Color.Green)
+                        Spacer(Modifier.width(12.dp))
+                        Text(nag.title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun PlaceholderScreen(name: String) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(name, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+private fun SettingsScreen(dark: Boolean, forest: Color) {
+    val context = LocalContext.current
+    var darkMode by remember { mutableStateOf(dark) }
+    var notifications by remember { mutableStateOf(true) }
+    var selectedTone by remember { mutableStateOf("Arp L") }
+    var showPlaces by remember { mutableStateOf(false) }
+
+    val tones = listOf(
+        "Arp L" to R.raw.arp_l,
+        "Arp S" to R.raw.arp_s,
+        "Doots" to R.raw.doots,
+        "Tone 1" to R.raw.notification_tone1,
+        "Tone 3" to R.raw.notification_tone3,
+        "Celestial L" to R.raw.celestial_l,
+        "Dopplar Extended" to R.raw.dopplar_extended,
+        "Aliens Most Likely" to R.raw.aliens_most_likely
+    )
+
+    if (showPlaces) {
+        Column(Modifier.fillMaxSize().padding(16.dp)) {
+            Text("Saved Places", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(16.dp))
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Home", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Radius: 360m", fontSize = 14.sp, color = Color.Gray)
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            Button(onClick = { showPlaces = false }) {
+                Text("Back to Settings")
+            }
+        }
+    } else {
+        Column(Modifier.fillMaxSize().padding(16.dp)) {
+            Text("Settings", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(16.dp))
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text("Dark Mode", fontSize = 16.sp)
+                        Switch(checked = darkMode, onCheckedChange = { darkMode = it })
+                    }
+                    Divider()
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text("Notifications", fontSize = 16.sp)
+                        Switch(checked = notifications, onCheckedChange = { notifications = it })
+                    }
+                    Divider()
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Notification Tone (Tap to preview)", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                        tones.forEach { (name, resId) ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        selectedTone = name
+                                        try {
+                                            MediaPlayer.create(context, resId)?.apply {
+                                                setOnCompletionListener { release() }
+                                                start()
+                                            }
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                        }
+                                    }
+                                    .padding(vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(name, fontSize = 14.sp)
+                                if (selectedTone == name) {
+                                    Text("Selected", fontSize = 12.sp, color = forest, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                    Divider()
+                    TextButton(onClick = { showPlaces = true }) {
+                        Text("Manage Saved Places", color = forest, fontSize = 16.sp)
+                    }
+                    Divider()
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text("App Version", fontSize = 16.sp)
+                        Text("1.0.4", fontSize = 14.sp, color = Color.Gray)
+                    }
+                }
+            }
+        }
     }
 }

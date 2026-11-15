@@ -1,5 +1,37 @@
 [
     {
+        "merged": "com.badger.app-debug-63:/raw_notification_tone3.ogg.flat",
+        "source": "com.badger.app-main-65:/raw/notification_tone3.ogg"
+    },
+    {
+        "merged": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-debug-63:/raw_notification_tone3.mp3.flat",
+        "source": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-main-65:/raw/notification_tone3.mp3"
+    },
+    {
+        "merged": "com.badger.app-debug-63:/raw_notification_tone1.ogg.flat",
+        "source": "com.badger.app-main-65:/raw/notification_tone1.ogg"
+    },
+    {
+        "merged": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-debug-63:/raw_arp_s.mp3.flat",
+        "source": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-main-65:/raw/arp_s.mp3"
+    },
+    {
+        "merged": "com.badger.app-debug-63:/raw_aliens_most_likely.ogg.flat",
+        "source": "com.badger.app-main-65:/raw/aliens_most_likely.ogg"
+    },
+    {
+        "merged": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-debug-63:/raw_notification_tone1.mp3.flat",
+        "source": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-main-65:/raw/notification_tone1.mp3"
+    },
+    {
+        "merged": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-debug-63:/raw_aliens_most_likely.mp3.flat",
+        "source": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-main-65:/raw/aliens_most_likely.mp3"
+    },
+    {
+        "merged": "com.badger.app-debug-63:/raw_arp_s.ogg.flat",
+        "source": "com.badger.app-main-65:/raw/arp_s.ogg"
+    },
+    {
         "merged": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-debug-63:/raw_dopplar_extended.mp3.flat",
         "source": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-main-65:/raw/dopplar_extended.mp3"
     },
@@ -16,31 +48,27 @@
         "source": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-main-65:/raw/celestial_l.mp3"
     },
     {
-        "merged": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-debug-63:/raw_notification_tone3.mp3.flat",
-        "source": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-main-65:/raw/notification_tone3.mp3"
+        "merged": "com.badger.app-debug-63:/raw_doots.ogg.flat",
+        "source": "com.badger.app-main-65:/raw/doots.ogg"
     },
     {
-        "merged": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-debug-63:/raw_arp_s.mp3.flat",
-        "source": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-main-65:/raw/arp_s.mp3"
+        "merged": "com.badger.app-debug-63:/raw_dopplar_extended.ogg.flat",
+        "source": "com.badger.app-main-65:/raw/dopplar_extended.ogg"
     },
     {
-        "merged": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-debug-63:/raw_notification_tone1.mp3.flat",
-        "source": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-main-65:/raw/notification_tone1.mp3"
+        "merged": "com.badger.app-debug-63:/raw_arp_l.ogg.flat",
+        "source": "com.badger.app-main-65:/raw/arp_l.ogg"
     },
     {
         "merged": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-debug-63:/raw_arp_l.mp3.flat",
         "source": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-main-65:/raw/arp_l.mp3"
     },
     {
-        "merged": "com.badger.app-debug-63:/drawable_leaf_plus.png.flat",
-        "source": "com.badger.app-main-65:/drawable/leaf_plus.png"
-    },
-    {
         "merged": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-debug-63:/drawable_leaf_plus.png.flat",
         "source": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-main-65:/drawable/leaf_plus.png"
     },
     {
-        "merged": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-debug-63:/raw_aliens_most_likely.mp3.flat",
-        "source": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-main-65:/raw/aliens_most_likely.mp3"
+        "merged": "com.badger.app-debug-63:/raw_celestial_l.ogg.flat",
+        "source": "com.badger.app-main-65:/raw/celestial_l.ogg"
     }
 ]
