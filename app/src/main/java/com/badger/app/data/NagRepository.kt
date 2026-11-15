@@ -8,7 +8,8 @@ class NagRepository(private val nagDao: NagDao) {
     val completedNags: Flow<List<NagItem>> = nagDao.getCompletedNags()
     val burrowedNags: Flow<List<NagItem>> = nagDao.getBurrowedNags()
 
-    suspend fun insert(nag: NagItem) { nagDao.insertNag(nag) }
+    suspend fun insert(nag: NagItem): Long = nagDao.insertNag(nag)
+    suspend fun getLocated(): List<NagItem> = nagDao.getLocated()
     suspend fun update(nag: NagItem) { nagDao.updateNag(nag) }
     suspend fun delete(nag: NagItem) { nagDao.deleteNag(nag) }
 }

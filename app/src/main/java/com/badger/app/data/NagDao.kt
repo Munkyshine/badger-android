@@ -16,7 +16,13 @@ interface NagDao {
     fun getBurrowedNags(): Flow<List<NagItem>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertNag(nag: NagItem)
+    suspend fun insertNag(nag: NagItem): Long
+
+    @Query("SELECT * FROM nags WHERE id = :id")
+    suspend fun getById(id: Long): NagItem?
+
+    @Query("SELECT * FROM nags WHERE latitude IS NOT NULL AND longitude IS NOT NULL")
+    suspend fun getLocated(): List<NagItem>
 
     @Update
     suspend fun updateNag(nag: NagItem)

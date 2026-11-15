@@ -11,5 +11,10 @@ data class NagItem(
     val isCompleted: Boolean = false,
     val dueDate: Long? = null,
     val priorityRaw: Int = 1,
-    val burrowed: Boolean = false
+    val burrowed: Boolean = false,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val radiusMeters: Int = 360,
+    val trigger: String = "When I arrive",
+    val placeName: String? = null
 )

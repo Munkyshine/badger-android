@@ -7,6 +7,7 @@ import com.badger.app.data.NagDatabase
 import com.badger.app.data.NagRepository
 import com.badger.app.model.NagItem
 import com.badger.app.ui.Priority
+import com.badger.app.geofence.GeofenceScheduler
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -39,25 +40,48 @@ class NagViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun addNag(title: String, priority: Priority = Priority.ToDo) {
+    fun addNag(
+        title: String,
+        priority: Priority = Priority.ToDo,
+        latitude: Double? = null,
+        longitude: Double? = null,
+        radiusMeters: Int = 360,
+        trigger: String = "When I arrive",
+        placeName: String? = null
+    ) {
         viewModelScope.launch {
-            repository.insert(NagItem(title = title.trim(), priorityRaw = priority.raw))
+            repository.insert(
+                NagItem(
+                    title = title.trim(), priorityRaw = priority.raw,
+                    latitude = latitude, longitude = longitude,
+                    radiusMeters = radiusMeters, trigger = trigger,
+                    placeName = placeName?.trim()?.ifBlank { null }
+                )
+            )
+            if (latitude != null) syncGeofences()
         }
     }
 
     fun completeNag(nag: NagItem) {
-        viewModelScope.launch { repository.update(nag.copy(isCompleted = true, burrowed = false)) }
+        viewModelScope.launch { repository.update(nag.copy(isCompleted = true, burrowed = false)); syncGeofences() }
     }
 
     fun burrowNag(nag: NagItem) {
-        viewModelScope.launch { repository.update(nag.copy(burrowed = true)) }
+        viewModelScope.launch { repository.update(nag.copy(burrowed = true)); syncGeofences() }
     }
 
     fun unburrowNag(nag: NagItem) {
-        viewModelScope.launch { repository.update(nag.copy(burrowed = false)) }
+        viewModelScope.launch { repository.update(nag.copy(burrowed = false)); syncGeofences() }
     }
 
     fun deleteNag(nag: NagItem) {
-        viewModelScope.launch { repository.delete(nag) }
+        viewModelScope.launch { repository.delete(nag); GeofenceScheduler.remove(getApplication(), nag.id) }
+    }
+
+    /** Re-registers geofences for active location nags and drops the rest. */
+    fun syncGeofences() {
+        viewModelScope.launch {
+            GeofenceScheduler.sync(getApplication(), repository.getLocated())
+        }
     }
 }

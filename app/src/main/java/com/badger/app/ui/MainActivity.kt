@@ -41,6 +41,24 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.badger.app.R
 import com.badger.app.model.NagItem
 import com.badger.app.viewmodel.NagViewModel
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.core.content.ContextCompat
+import com.google.android.gms.location.LocationServices
+import com.badger.app.geofence.GeofenceScheduler
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.Circle
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -105,6 +123,27 @@ fun BadgerApp(viewModel: NagViewModel = viewModel()) {
 @Composable
 private fun TodayScreen(viewModel: NagViewModel, dark: Boolean, forest: Color) {
     val nags by viewModel.openNags.collectAsState()
+    val ctx = LocalContext.current
+    // Chain: notifications -> background location -> register geofences.
+    val bgLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        viewModel.syncGeofences()
+    }
+    val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        if (android.os.Build.VERSION.SDK_INT >= 29 && !GeofenceScheduler.hasBackground(ctx)) {
+            bgLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+        } else viewModel.syncGeofences()
+    }
+    fun requestLocationNagPermissions() {
+        val needNotif = android.os.Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        when {
+            needNotif -> notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            android.os.Build.VERSION.SDK_INT >= 29 && !GeofenceScheduler.hasBackground(ctx) ->
+                bgLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+            else -> viewModel.syncGeofences()
+        }
+    }
+    LaunchedEffect(Unit) { viewModel.syncGeofences() }
     var showAdd by remember { mutableStateOf(false) }
     val titleColor = if (dark) BadgerColors.darkTitle else BadgerColors.lightTitle
     val cardBg = if (dark) BadgerColors.darkCard else Color.White
@@ -161,8 +200,15 @@ private fun TodayScreen(viewModel: NagViewModel, dark: Boolean, forest: Color) {
             AddNagDialog(
                 forest = forest,
                 onDismiss = { showAdd = false },
-                onAdd = { title, priority ->
-                    viewModel.addNag(title, priority)
+                onAdd = { title, priority, loc ->
+                    if (loc != null) requestLocationNagPermissions()
+                    viewModel.addNag(
+                        title, priority,
+                        latitude = loc?.pin?.latitude, longitude = loc?.pin?.longitude,
+                        radiusMeters = loc?.radius ?: 360,
+                        trigger = loc?.trigger ?: "When I arrive",
+                        placeName = loc?.placeName
+                    )
                     showAdd = false
                 }
             )
@@ -241,7 +287,7 @@ private fun NagCard(
 private fun AddNagDialog(
     forest: Color,
     onDismiss: () -> Unit,
-    onAdd: (String, Priority) -> Unit
+    onAdd: (String, Priority, NagLocation?) -> Unit
 ) {
     var title by remember { mutableStateOf("") }
     var priority by remember { mutableStateOf(Priority.ToDo) }
@@ -249,12 +295,13 @@ private fun AddNagDialog(
     var trigger by remember { mutableStateOf("When I arrive") }
     var saveAsPlace by remember { mutableStateOf(false) }
     var placeName by remember { mutableStateOf("") }
+    var pin by remember { mutableStateOf<LatLng?>(null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("New Nag & Location") },
         text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
@@ -277,6 +324,10 @@ private fun AddNagDialog(
                         )
                     }
                 }
+                Spacer(Modifier.height(12.dp))
+                Text("Location (tap the map to drop a pin)", style = MaterialTheme.typography.labelMedium)
+                Spacer(Modifier.height(4.dp))
+                LocationPicker(pin = pin, radiusMeters = radius.toInt(), onPin = { pin = it })
                 Spacer(Modifier.height(12.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Radius", style = MaterialTheme.typography.labelMedium)
@@ -323,7 +374,12 @@ private fun AddNagDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { if (title.isNotBlank()) onAdd(title, priority) },
+                onClick = {
+                    if (title.isNotBlank()) {
+                        val loc = pin?.let { NagLocation(it, radius.toInt(), trigger, if (saveAsPlace) placeName else null) }
+                        onAdd(title, priority, loc)
+                    }
+                },
                 colors = ButtonDefaults.textButtonColors(contentColor = forest)
             ) { Text("Save") }
         },
@@ -528,5 +584,62 @@ private fun SettingsScreen(dark: Boolean, forest: Color) {
                 }
             }
         }
+    }
+}
+
+data class NagLocation(val pin: LatLng, val radius: Int, val trigger: String, val placeName: String?)
+
+private val DEFAULT_CENTER = LatLng(33.4735, -82.0105) // Augusta, GA
+
+@Composable
+private fun LocationPicker(pin: LatLng?, radiusMeters: Int, onPin: (LatLng) -> Unit) {
+    val context = LocalContext.current
+    val camera = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(pin ?: DEFAULT_CENTER, 11f)
+    }
+    var hasPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        hasPermission = it
+    }
+    LaunchedEffect(Unit) {
+        if (!hasPermission) launcher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+    LaunchedEffect(hasPermission) {
+        if (hasPermission && pin == null) {
+            try {
+                @Suppress("MissingPermission")
+                LocationServices.getFusedLocationProviderClient(context).lastLocation
+                    .addOnSuccessListener { loc ->
+                        if (loc != null) camera.move(
+                            CameraUpdateFactory.newLatLngZoom(LatLng(loc.latitude, loc.longitude), 14f)
+                        )
+                    }
+            } catch (_: SecurityException) {}
+        }
+    }
+    Box(Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(12.dp))) {
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = camera,
+            uiSettings = MapUiSettings(zoomControlsEnabled = true, myLocationButtonEnabled = hasPermission),
+            properties = com.google.maps.android.compose.MapProperties(isMyLocationEnabled = hasPermission),
+            onMapClick = onPin
+        ) {
+            pin?.let {
+                Marker(state = MarkerState(position = it))
+                Circle(
+                    center = it, radius = radiusMeters.toDouble(),
+                    fillColor = Color(0x332E7D32), strokeColor = Color(0xFF2E7D32), strokeWidth = 3f
+                )
+            }
+        }
+    }
+    if (pin == null) {
+        Text("No pin yet — nag will be time-based only.", fontSize = 11.sp)
     }
 }
