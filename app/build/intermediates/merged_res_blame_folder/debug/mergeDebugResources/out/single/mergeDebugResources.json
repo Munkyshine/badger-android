@@ -36,6 +36,10 @@
         "source": "com.badger.app-main-65:/drawable/leaf_plus.png"
     },
     {
+        "merged": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-debug-63:/drawable_leaf_plus.png.flat",
+        "source": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-main-65:/drawable/leaf_plus.png"
+    },
+    {
         "merged": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-debug-63:/raw_aliens_most_likely.mp3.flat",
         "source": "/Users/joshuascelsi/.gradle/daemon/8.13/com.badger.app-main-65:/raw/aliens_most_likely.mp3"
     }

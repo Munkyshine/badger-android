@@ -213,29 +213,79 @@ private fun AddNagDialog(
 ) {
     var title by remember { mutableStateOf("") }
     var priority by remember { mutableStateOf(Priority.ToDo) }
+    var radius by remember { mutableStateOf(360f) }
+    var trigger by remember { mutableStateOf("When I arrive") }
+    var saveAsPlace by remember { mutableStateOf(false) }
+    var placeName by remember { mutableStateOf("") }
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New Nag") },
+        title = { Text("New Nag & Location") },
         text = {
-            Column {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
                     label = { Text("What needs doing?") },
-                    singleLine = true
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Priority", style = MaterialTheme.typography.labelMedium)
+                Spacer(Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Priority.entries.forEach { p ->
                         FilterChip(
                             selected = priority == p,
                             onClick = { priority = p },
-                            label = { Text(p.label, fontSize = 11.sp) },
+                            label = { Text(p.label, fontSize = 10.sp) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = p.stripe.copy(alpha = 0.25f)
                             )
                         )
                     }
+                }
+                Spacer(Modifier.height(12.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Radius", style = MaterialTheme.typography.labelMedium)
+                    Text("${radius.toInt()} m", style = MaterialTheme.typography.labelMedium, color = forest)
+                }
+                Slider(
+                    value = radius,
+                    onValueChange = { radius = it },
+                    valueRange = 100f..1000f,
+                    steps = 18
+                )
+                Spacer(Modifier.height(8.dp))
+                Text("Trigger", style = MaterialTheme.typography.labelMedium)
+                Spacer(Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    listOf("When I arrive", "When I leave", "Both").forEach { t ->
+                        FilterChip(
+                            selected = trigger == t,
+                            onClick = { trigger = t },
+                            label = { Text(t, fontSize = 11.sp) }
+                        )
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Save as place", style = MaterialTheme.typography.bodyMedium)
+                    Switch(checked = saveAsPlace, onCheckedChange = { saveAsPlace = it })
+                }
+                if (saveAsPlace) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = placeName,
+                        onValueChange = { placeName = it },
+                        label = { Text("Place Name (e.g. Walmart)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         },
@@ -243,7 +293,7 @@ private fun AddNagDialog(
             TextButton(
                 onClick = { if (title.isNotBlank()) onAdd(title, priority) },
                 colors = ButtonDefaults.textButtonColors(contentColor = forest)
-            ) { Text("Add") }
+            ) { Text("Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
