@@ -1,0 +1,13 @@
+R_DEF: Internal format may change without notice
+local
+drawable app_icon
+drawable leaf_plus
+raw aliens_most_likely
+raw arp_l
+raw arp_s
+raw celestial_l
+raw doots
+raw dopplar_extended
+raw notification_tone1
+raw notification_tone3
+style Theme.Badger

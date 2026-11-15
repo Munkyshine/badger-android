@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.badger.app.PriorityTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-11-14T21:14:13.340Z" hostname="Josh-uwas-Mac.local" time="0.008">
+  <properties/>
+  <testcase name="fromRaw_mapsIosRanks" classname="com.badger.app.PriorityTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
